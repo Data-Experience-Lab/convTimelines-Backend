@@ -10,9 +10,19 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+const allowedOrigins = [
+  "http://127.0.0.1:5500",             // local dev
+  "http://localhost:3000",             // optional alternative
+  "https://data-experience-lab.github.io/conversation-timelines"   // production GitHub Pages domain
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 app.use(express.json());
-// app.use(express.static(path.join(__dirname, "..")));
 
 // OpenAI Proxy Route
 app.post("/api/chat", async (req, res) => {
@@ -72,10 +82,6 @@ app.post("/api/speech-token", async (req, res) => {
     res.status(500).json({ error: "Failed to retrieve Azure token" });
   }
 });
-
-// app.get("/", (req, res) => {
-//   res.sendFile(path.join(__dirname, "..", "index.html"));
-// });
 
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
