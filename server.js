@@ -33,21 +33,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// app.use((req, res, next) => {
-//   const origin = req.headers.origin || "http://127.0.0.1:5500";
-//   res.setHeader("Access-Control-Allow-Origin", origin);
-//   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-//   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-//   // Handle preflight requests
-//   if (req.method === "OPTIONS") {
-//     return res.sendStatus(200);
-//   }
-
-//   next();
-// });
-
-
 app.use(express.json());
 
 // OpenAI Proxy Route
@@ -93,16 +78,16 @@ app.post("/api/speech-token", async (req, res) => {
     const region = process.env.AZURE_REGION;
     const key = process.env.AZURE_API_KEY;
 
-    const response = await fetch(`https://${region}.api.cognitive.microsoft.com/sts/v1.0/issueToken`, {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": key,
-        "Content-Length": "0",
-      }
-    });
+    // const response = await fetch(`https://${region}.api.cognitive.microsoft.com/sts/v1.0/issueToken`, {
+    //   method: "POST",
+    //   headers: {
+    //     "Ocp-Apim-Subscription-Key": key,
+    //     "Content-Length": "0",
+    //   }
+    // });
 
-    const token = await response.text();
-    res.status(200).json({ token, region });
+    // const token = await response.text();
+    res.status(200).json({ key, region });
   } catch (err) {
     console.error("Azure Speech error:", err);
     res.status(500).json({ error: "Failed to retrieve Azure token" });
