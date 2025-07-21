@@ -73,7 +73,7 @@ app.get("/api/speech-config", (req, res) => {
 });
 
 // Azure Token Route
-app.post("/api/speech-token", async (req, res) => {
+app.get("/api/speech-token", async (req, res) => {
   try {
     const region = process.env.AZURE_REGION;
     const key = process.env.AZURE_API_KEY;
@@ -87,7 +87,7 @@ app.post("/api/speech-token", async (req, res) => {
     // });
 
     // const token = await response.text();
-    res.status(200).json({ key, region });
+    res.json({ key, region });
   } catch (err) {
     console.error("Azure Speech error:", err);
     res.status(500).json({ error: "Failed to retrieve Azure token" });
