@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "..")));
+// app.use(express.static(path.join(__dirname, "..")));
 
 // OpenAI Proxy Route
 app.post("/api/chat", async (req, res) => {
@@ -73,9 +73,9 @@ app.post("/api/speech-token", async (req, res) => {
   }
 });
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "index.html"));
-});
+// app.get("/", (req, res) => {
+//   res.sendFile(path.join(__dirname, "..", "index.html"));
+// });
 
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
