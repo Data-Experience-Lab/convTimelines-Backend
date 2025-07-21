@@ -10,31 +10,28 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use((req, res, next) => {
-  console.log("Incoming origin:", req.headers.origin);
-  next();
-});
+const allowedOrigins = [
+  "http://127.0.0.1:5500",
+  "http://localhost:3000",
+  "https://data-experience-lab.github.io",
+  "https://data-experience-lab.github.io/conversation-timelines"
+];
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+app.use(cors({
+  origin: function (origin, callback) {
+    console.log("CORS origin check:", origin);
 
-  const allowedOrigins = [
-    "http://127.0.0.1:5500",
-    "http://localhost:3000",
-    "https://data-experience-lab.github.io",
-    "https://data-experience-lab.github.io/conversation-timelines"
-  ];
-
-  if (!origin || allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    next();
-  } else {
-    console.log("Blocked request with origin:", origin);
-    res.status(403).send("CORS blocked this request");
-  }
-});
+    // Allow requests with no origin (like curl, or some local dev tools)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("CORS blocked:", origin);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 // app.use((req, res, next) => {
 //   const origin = req.headers.origin || "http://127.0.0.1:5500";
