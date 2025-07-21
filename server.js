@@ -15,40 +15,40 @@ app.use((req, res, next) => {
   next();
 });
 
-// app.use((req, res, next) => {
-//   const origin = req.headers.origin;
-
-//   const allowedOrigins = [
-//     "http://127.0.0.1:5500",
-//     "http://localhost:3000",
-//     "https://data-experience-lab.github.io",
-//     "https://data-experience-lab.github.io/conversation-timelines"
-//   ];
-
-//   if (!origin || allowedOrigins.includes(origin)) {
-//     res.setHeader("Access-Control-Allow-Origin", origin || "http://127.0.0.1:5500");
-//     res.setHeader("Access-Control-Allow-Methods", "GET, POST");
-//     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-//     next();
-//   } else {
-//     console.log("Blocked request with origin:", origin);
-//     res.status(403).send("CORS blocked this request");
-//   }
-// });
-
 app.use((req, res, next) => {
-  const origin = req.headers.origin || "http://127.0.0.1:5500";
-  res.setHeader("Access-Control-Allow-Origin", origin);
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  const origin = req.headers.origin;
 
-  // Handle preflight requests
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
+  const allowedOrigins = [
+    "http://127.0.0.1:5500",
+    "http://localhost:3000",
+    "https://data-experience-lab.github.io",
+    "https://data-experience-lab.github.io/conversation-timelines"
+  ];
+
+  if (!origin || allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    next();
+  } else {
+    console.log("Blocked request with origin:", origin);
+    res.status(403).send("CORS blocked this request");
   }
-
-  next();
 });
+
+// app.use((req, res, next) => {
+//   const origin = req.headers.origin || "http://127.0.0.1:5500";
+//   res.setHeader("Access-Control-Allow-Origin", origin);
+//   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+//   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+//   // Handle preflight requests
+//   if (req.method === "OPTIONS") {
+//     return res.sendStatus(200);
+//   }
+
+//   next();
+// });
 
 
 app.use(express.json());
