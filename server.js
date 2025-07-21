@@ -17,7 +17,13 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true); // allow request
+    } else {
+      callback(new Error("Not allowed by CORS: " + origin));
+    }
+  },
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
