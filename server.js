@@ -12,9 +12,14 @@ const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = [
   "http://127.0.0.1:5500",             // local dev
-  "http://localhost:3000",             // optional alternative
+  "http://localhost:3000",             // Local dev
   "https://data-experience-lab.github.io/conversation-timelines"   // production GitHub Pages domain
 ];
+
+app.use((req, res, next) => {
+  console.log("Incoming origin:", req.headers.origin);
+  next();
+});
 
 app.use(cors({
   origin: function (origin, callback) {
