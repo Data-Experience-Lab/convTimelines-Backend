@@ -131,38 +131,38 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
 });
 
 
-// // Azure Speech Config Route (returns region only)
-// app.get("/api/speech-config", (req, res) => {
-//   const region = process.env.AZURE_REGION;
+// Azure Speech Config Route (returns region only)
+app.get("/api/speech-config", (req, res) => {
+  const region = process.env.AZURE_REGION;
 
-//   if (!region) {
-//     return res.status(500).json({ error: "Azure region not set" });
-//   }
+  if (!region) {
+    return res.status(500).json({ error: "Azure region not set" });
+  }
 
-//   res.json({ region });
-// });
+  res.json({ region });
+});
 
-// // Azure Token Route
-// app.post("/api/speech-token", async (req, res) => {
-//   try {
-//     const region = process.env.AZURE_REGION;
-//     const key = process.env.AZURE_API_KEY;
+// Azure Token Route
+app.post("/api/speech-token", async (req, res) => {
+  try {
+    const region = process.env.AZURE_REGION;
+    const key = process.env.AZURE_API_KEY;
 
-//     const response = await fetch(`https://${region}.api.cognitive.microsoft.com/sts/v1.0/issueToken`, {
-//       method: "POST",
-//       headers: {
-//         "Ocp-Apim-Subscription-Key": key,
-//         "Content-Length": "0",
-//       }
-//     });
+    const response = await fetch(`https://${region}.api.cognitive.microsoft.com/sts/v1.0/issueToken`, {
+      method: "POST",
+      headers: {
+        "Ocp-Apim-Subscription-Key": key,
+        "Content-Length": "0",
+      }
+    });
 
-//     const token = await response.text();
-//     res.status(200).json({ token, region });
-//   } catch (err) {
-//     console.error("Azure Speech error:", err);
-//     res.status(500).json({ error: "Failed to retrieve Azure token" });
-//   }
-// });
+    const token = await response.text();
+    res.status(200).json({ token, region });
+  } catch (err) {
+    console.error("Azure Speech error:", err);
+    res.status(500).json({ error: "Failed to retrieve Azure token" });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
