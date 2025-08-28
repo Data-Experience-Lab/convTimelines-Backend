@@ -4,11 +4,19 @@ const dotenv = require("dotenv");
 const path = require("path");
 const fetch = require("node-fetch");
 const cors = require("cors");
+const multer = require ("multer");
+const fs = require("fs");
+const openai = require("openai");
+const { createClient } = require("@deepgram/sdk");
+const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
+
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const upload = multer({ dest: "uploads/" });
 
 const allowedOrigins = [
   "http://127.0.0.1:5500",
@@ -35,7 +43,9 @@ app.use(cors({
 
 app.use(express.json());
 
+// ==================
 // OpenAI Proxy Route
+// ==================
 app.post("/api/chat", async (req, res) => {
   try {
     console.log("Received /api/chat with body:", req.body);
@@ -61,38 +71,98 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-// Azure Speech Config Route (returns region only)
-app.get("/api/speech-config", (req, res) => {
-  const region = process.env.AZURE_REGION;
-
-  if (!region) {
-    return res.status(500).json({ error: "Azure region not set" });
-  }
-
-  res.json({ region });
-});
-
-// Azure Token Route
-app.post("/api/speech-token", async (req, res) => {
+// ==================
+// OpenAI Whisper Route
+// ==================
+app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
   try {
-    const region = process.env.AZURE_REGION;
-    const key = process.env.AZURE_API_KEY;
+    if (!req.file) {
+      return res.status(400).json({ error: "No audio file uploaded" });
+    }
 
-    const response = await fetch(`https://${region}.api.cognitive.microsoft.com/sts/v1.0/issueToken`, {
-      method: "POST",
-      headers: {
-        "Ocp-Apim-Subscription-Key": key,
-        "Content-Length": "0",
-      }
+    console.log("Received audio file:", req.file.path);
+
+    // 1. Whisper transcription
+    const whisperResult = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(req.file.path),
+      model: "whisper-1",
+      response_format: "verbose_json", // returns segments
     });
 
-    const token = await response.text();
-    res.status(200).json({ token, region });
+    // 2. Deepgram diarization
+    const dgResponse = await deepgram.listen.prerecorded.transcribeFile(
+      fs.readFileSync(req.file.path),
+      {
+        model: "nova", // accurate diarization model
+        diarize: true,
+        speaker_count: 2 // optional, set null to auto-detect
+      }
+    );
+
+    const paragraphs = dgResponse.result?.channel?.alternatives?.[0]?.paragraphs?.paragraphs || [];
+
+    // 3. Merge Whisper segments with Deepgram speaker labels
+    const merged = whisperResult.segments.map(seg => {
+      const speaker = paragraphs.find(p =>
+        seg.start >= p.sentences[0]?.start &&
+        seg.end <= p.sentences[p.sentences.length - 1]?.end
+      )?.speaker ?? "Unknown";
+
+      return {
+        speaker: `Speaker ${speaker}`,
+        text: seg.text.trim(),
+        start: seg.start,
+        end: seg.end
+      };
+    });
+
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path);
+
+    res.json({
+      summary: merged.map(m => `${m.speaker}: ${m.text}`).join(" "),
+      segments: merged
+    });
+
   } catch (err) {
-    console.error("Azure Speech error:", err);
-    res.status(500).json({ error: "Failed to retrieve Azure token" });
+    console.error("Transcription error:", err);
+    res.status(500).json({ error: "Failed to transcribe audio" });
   }
 });
+
+
+// // Azure Speech Config Route (returns region only)
+// app.get("/api/speech-config", (req, res) => {
+//   const region = process.env.AZURE_REGION;
+
+//   if (!region) {
+//     return res.status(500).json({ error: "Azure region not set" });
+//   }
+
+//   res.json({ region });
+// });
+
+// // Azure Token Route
+// app.post("/api/speech-token", async (req, res) => {
+//   try {
+//     const region = process.env.AZURE_REGION;
+//     const key = process.env.AZURE_API_KEY;
+
+//     const response = await fetch(`https://${region}.api.cognitive.microsoft.com/sts/v1.0/issueToken`, {
+//       method: "POST",
+//       headers: {
+//         "Ocp-Apim-Subscription-Key": key,
+//         "Content-Length": "0",
+//       }
+//     });
+
+//     const token = await response.text();
+//     res.status(200).json({ token, region });
+//   } catch (err) {
+//     console.error("Azure Speech error:", err);
+//     res.status(500).json({ error: "Failed to retrieve Azure token" });
+//   }
+// });
 
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
