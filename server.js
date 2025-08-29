@@ -77,7 +77,7 @@ app.post("/api/chat", async (req, res) => {
 // ==================
 // OpenAI Whisper Route
 // ==================
-app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
+app.post("/api/transcribe", async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No audio file uploaded" });
@@ -88,7 +88,7 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
             headers: {
                 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
             },
-            body: formData
+            body: req.file
         });
     console.log(response)
 
