@@ -12,14 +12,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
-
+const upload = multer({ storage: multer.memoryStorage() });
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// const upload = multer({ storage: multer.memoryStorage() });
 
 const allowedOrigins = [
   "http://127.0.0.1:5500",
@@ -77,78 +75,120 @@ app.post("/api/chat", async (req, res) => {
 // ==================
 // OpenAI Whisper Route
 // ==================
-app.post("/api/transcribe", async (req, res) => {
+app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No audio file uploaded" });
     }
 
-    console.log(req.file)
+    console.log("Received file:", req.file.originalname, req.file.mimetype, req.file.size);
 
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-            method: 'POST',
-            headers: {
-              "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-              // Important: preserve content-type including boundary
-              "Content-Type": req.headers["content-type"]
-            },
-            body: req
-        });
-    console.log(response)
-
-    // res.json(transcription);
-
-    // 1. Whisper transcription
-    // const whisperResult = await openai.audio.transcriptions.create({
-    //   file: fs.createReadStream(req.file.path),
-    //   model: "whisper-1",
-    //   response_format: "verbose_json", // returns segments
-    // });
-
-    // 2. Deepgram diarization
-    const dgResponse = await deepgram.listen.prerecorded.transcribeFile(
-      fs.readFileSync(req.file.path),
-      {
-        model: "nova", // accurate diarization model
-        diarize: true,
-        speaker_count: 2 // optional, set null to auto-detect
-      }
-    );
-
-    console.log(dgResponse)
-
-    const paragraphs = dgResponse.result?.channel?.alternatives?.[0]?.paragraphs?.paragraphs || [];
-
-    // 3. Merge Whisper segments with Deepgram speaker labels
-    const merged = whisperResult.segments.map(seg => {
-      const speaker = paragraphs.find(p =>
-        seg.start >= p.sentences[0]?.start &&
-        seg.end <= p.sentences[p.sentences.length - 1]?.end
-      )?.speaker ?? "Unknown";
-
-      return {
-        speaker: `Speaker ${speaker}`,
-        text: seg.text.trim(),
-        start: seg.start,
-        end: seg.end
-      };
+    // Wrap buffer in a proper File for OpenAI
+    const audioFile = new File([req.file.buffer], req.file.originalname, {
+      type: req.file.mimetype
     });
 
-    console.log(merged)
+    // 1️⃣ Whisper transcription
+    const whisperRes = await openai.audio.transcriptions.create({
+      file: audioFile,
+      model: "whisper-1",
+      response_format: "verbose_json"
+    });
 
-    // Clean up uploaded file
-    fs.unlinkSync(req.file.path);
+    console.log(whisperRes)
 
+    // 2️⃣ Deepgram diarization
+    const deepgramRes = await dgClient.transcription.preRecorded(
+      { buffer: req.file.buffer, mimetype: req.file.mimetype },
+      { diarize: true, model: "nova" }
+    );
+
+    console.log(deepgramRes)
+
+    // 3️⃣ Return combined result
     res.json({
-      summary: merged.map(m => `${m.speaker}: ${m.text}`).join(" "),
-      segments: merged
+      whisper: whisperRes,
+      deepgram: deepgramRes
     });
 
   } catch (err) {
     console.error("Transcription error:", err);
-    res.status(500).json({ error: "Failed to transcribe audio" });
+    res.status(500).json({ error: "Transcription failed", details: err.message });
   }
 });
+// app.post("/api/transcribe",  upload.single("audio"), async (req, res) => {
+//   try {
+//     console.log(req)
+//     if (!req.file) {
+//       return res.status(400).json({ error: "No audio file uploaded" });
+//     }
+
+//     console.log(req.file)
+
+//     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+//             method: 'POST',
+//             headers: {
+//               "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+//               // Important: preserve content-type including boundary
+//               "Content-Type": req.headers["content-type"]
+//             },
+//             body: req
+//         });
+//     console.log(response)
+
+//     // res.json(transcription);
+
+//     // 1. Whisper transcription
+//     // const whisperResult = await openai.audio.transcriptions.create({
+//     //   file: fs.createReadStream(req.file.path),
+//     //   model: "whisper-1",
+//     //   response_format: "verbose_json", // returns segments
+//     // });
+
+//     // 2. Deepgram diarization
+//     const dgResponse = await deepgram.listen.prerecorded.transcribeFile(
+//       fs.readFileSync(req.file.path),
+//       {
+//         model: "nova", // accurate diarization model
+//         diarize: true,
+//         speaker_count: 2 // optional, set null to auto-detect
+//       }
+//     );
+
+//     console.log(dgResponse)
+
+//     const paragraphs = dgResponse.result?.channel?.alternatives?.[0]?.paragraphs?.paragraphs || [];
+
+//     // 3. Merge Whisper segments with Deepgram speaker labels
+//     const merged = whisperResult.segments.map(seg => {
+//       const speaker = paragraphs.find(p =>
+//         seg.start >= p.sentences[0]?.start &&
+//         seg.end <= p.sentences[p.sentences.length - 1]?.end
+//       )?.speaker ?? "Unknown";
+
+//       return {
+//         speaker: `Speaker ${speaker}`,
+//         text: seg.text.trim(),
+//         start: seg.start,
+//         end: seg.end
+//       };
+//     });
+
+//     console.log(merged)
+
+//     // Clean up uploaded file
+//     fs.unlinkSync(req.file.path);
+
+//     res.json({
+//       summary: merged.map(m => `${m.speaker}: ${m.text}`).join(" "),
+//       segments: merged
+//     });
+
+//   } catch (err) {
+//     console.error("Transcription error:", err);
+//     res.status(500).json({ error: "Failed to transcribe audio" });
+//   }
+// });
 
 
 // Azure Speech Config Route (returns region only)
