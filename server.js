@@ -83,6 +83,8 @@ app.post("/api/transcribe", async (req, res) => {
       return res.status(400).json({ error: "No audio file uploaded" });
     }
 
+    console.log(req.file)
+
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
             method: 'POST',
             headers: {
