@@ -11,13 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@deepgram/sdk": "^4.11.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
-    "fs": "^0.0.1-security",
-    "multer": "^2.0.2",
-    "node-fetch": "2.6.9",
-    "openai": "^5.16.0"
+    "node-fetch": "2.6.9"
   }
 }
