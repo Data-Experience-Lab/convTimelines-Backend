@@ -98,10 +98,13 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
     console.log(whisperRes)
 
     // 2️⃣ Deepgram diarization
-    const deepgramRes = await dgClient.transcription.preRecorded(
-      { buffer: req.file.buffer, mimetype: req.file.mimetype },
-      { diarize: true, model: "nova" }
-    );
+    const deepgramRes = await deepgram.listen.rest.v1.transcribeFile({
+      source: req.file.buffer,
+      options: {
+        model: "nova",
+        diarize: true
+      }
+    });
 
     console.log(deepgramRes)
 
