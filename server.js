@@ -19,7 +19,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage: multer.memoryStorage() });
 
 const allowedOrigins = [
   "http://127.0.0.1:5500",
@@ -87,19 +87,16 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
     console.log("File mimetype:", req.file.mimetype);
     console.log("File size:", req.file.size);
 
-    // Convert buffer → ReadableStream for Whisper
-    const bufferStream = new require("stream").Readable();
-    bufferStream._read = () => {}; // _read is required
-    bufferStream.push(req.file.buffer);
-    bufferStream.push(null);
-
-    const transcription = await openai.audio.transcriptions.create({
-      file: bufferStream,
-      model: "whisper-1",
-      response_format: "verbose_json",
-      // you can also add: temperature, prompt, etc.
+    // 👇 Wrap buffer in a proper File with name + type
+    const audioFile = new File([req.file.buffer], "recording.wav", {
+      type: req.file.mimetype,
     });
 
+    const transcription = await openai.audio.transcriptions.create({
+      file: audioFile,     // not just a stream, a proper file
+      model: "whisper-1",
+      response_format: "verbose_json",
+    });
     console.log(transcription)
 
     // res.json(transcription);
