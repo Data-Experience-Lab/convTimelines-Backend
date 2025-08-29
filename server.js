@@ -6,8 +6,11 @@ const fetch = require("node-fetch");
 const cors = require("cors");
 const multer = require ("multer");
 const fs = require("fs");
-const openai = require("openai");
+const OpenAI = require("openai");
 const { createClient } = require("@deepgram/sdk");
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
 
 
