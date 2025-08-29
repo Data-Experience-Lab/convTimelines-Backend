@@ -19,7 +19,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const upload = multer({ storage: multer.memoryStorage() });
+// const upload = multer({ storage: multer.memoryStorage() });
 
 const allowedOrigins = [
   "http://127.0.0.1:5500",
@@ -83,21 +83,14 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
       return res.status(400).json({ error: "No audio file uploaded" });
     }
 
-    console.log("Received audio file:", req.file.path);
-    console.log("File mimetype:", req.file.mimetype);
-    console.log("File size:", req.file.size);
-
-    // 👇 Wrap buffer in a proper File with name + type
-    const audioFile = new File([req.file.buffer], "recording.wav", {
-      type: req.file.mimetype,
-    });
-
-    const transcription = await openai.audio.transcriptions.create({
-      file: audioFile,     // not just a stream, a proper file
-      model: "whisper-1",
-      response_format: "verbose_json",
-    });
-    console.log(transcription)
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            },
+            body: formData
+        });
+    console.log(response)
 
     // res.json(transcription);
 
