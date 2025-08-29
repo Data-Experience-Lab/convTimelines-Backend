@@ -88,9 +88,11 @@ app.post("/api/transcribe", async (req, res) => {
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+              "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+              // Important: preserve content-type including boundary
+              "Content-Type": req.headers["content-type"]
             },
-            body: req.file
+            body: req
         });
     console.log(response)
 
