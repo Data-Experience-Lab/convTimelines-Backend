@@ -85,12 +85,23 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
 
     console.log("Received audio file:", req.file.path);
 
-    // 1. Whisper transcription
-    const whisperResult = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(req.file.path),
+    const transcription = await openai.audio.transcriptions.create({
+      file: {
+        buffer: req.file.buffer,
+        name: req.file.originalname, // e.g. "recording.wav"
+      },
       model: "whisper-1",
-      response_format: "verbose_json", // returns segments
+      response_format: "verbose_json",
     });
+
+    // res.json(transcription);
+
+    // 1. Whisper transcription
+    // const whisperResult = await openai.audio.transcriptions.create({
+    //   file: fs.createReadStream(req.file.path),
+    //   model: "whisper-1",
+    //   response_format: "verbose_json", // returns segments
+    // });
 
     // 2. Deepgram diarization
     const dgResponse = await deepgram.listen.prerecorded.transcribeFile(
