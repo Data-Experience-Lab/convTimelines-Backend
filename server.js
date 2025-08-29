@@ -85,14 +85,16 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
 
     console.log("Received audio file:", req.file.path);
 
+    // Wrap multer's buffer into a Blob so the OpenAI SDK recognizes it
+    const fileBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
+
     const transcription = await openai.audio.transcriptions.create({
-      file: {
-        buffer: req.file.buffer,
-        name: req.file.originalname, // e.g. "recording.wav"
-      },
+      file: new File([fileBlob], req.file.originalname, { type: req.file.mimetype }),
       model: "whisper-1",
       response_format: "verbose_json",
     });
+
+    console.log(transcription)
 
     // res.json(transcription);
 
@@ -113,6 +115,8 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
       }
     );
 
+    console.log(dgResponse)
+
     const paragraphs = dgResponse.result?.channel?.alternatives?.[0]?.paragraphs?.paragraphs || [];
 
     // 3. Merge Whisper segments with Deepgram speaker labels
@@ -129,6 +133,8 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
         end: seg.end
       };
     });
+
+    console.log(merged)
 
     // Clean up uploaded file
     fs.unlinkSync(req.file.path);
