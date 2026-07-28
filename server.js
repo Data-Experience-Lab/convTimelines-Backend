@@ -61,6 +61,32 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
+// OpenAI Proxy Route
+app.post("/api/furhat-chat", async (req, res) => {
+  try {
+    console.log("Received /api/chat with body:", req.body);
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_FURHAT}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(req.body),
+    });
+
+    const data = await response.json();
+
+    console.log("OpenAI status:", response.status);
+    console.log("OpenAI response:", data);
+
+    res.status(response.status).json(data);
+  } catch (err) {
+    console.error("OpenAI API error:", err);
+    res.status(500).json({ error: "Failed to call OpenAI API" });
+  }
+});
+
 // Azure Speech Config Route (returns region only)
 app.get("/api/speech-config", (req, res) => {
   const region = process.env.AZURE_REGION;
